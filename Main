@@ -1,0 +1,121 @@
+package fromStringToJsonString;
+
+import java.util.Iterator;
+
+public class Main {
+
+	public static void main(String[] args) {
+
+		String objstr = "A<1,?,'Content'=A<1,?,'RootSet'=A<1,?,'Children'={A<1,?,'customSQL'=true,'DisplayLen'=50,'DisplayName'='_siglasBD','FixedRows'=true,'ID'=6,'Length'=32,'MaxRows'=1,'Name'='_siglasBD','NumRows'=1,'Required'=false,'Search'=false,'Type'=10013,'ValidField'='<No Select Field>','ValidKeyAttr'={'<No Key Attribute>'},'ValidKeyField'={'<No Key Field>'},'ValidKeyValue'={'<No Key Value>'},'ValidTable'='<No Table>','ValidValues'={'select distinct prefijo from TB_BR_Dependencias where estado = \'Activo\' Order by prefijo'}>,A<1,?,'DisplayLen'=32,'DisplayName'='_sigla','FixedRows'=true,'ID'=7,'Length'=32,'MaxRows'=1,'Name'='_sigla','NumRows'=1,'Required'=false,'Search'=false,'Type'=-1>,A<1,?,'DisplayLen'=32,'DisplayName'='_tipologia','FixedRows'=true,'ID'=3,'Length'=32,'MaxRows'=1,'Name'='_tipologia','NumRows'=1,'Required'=false,'Search'=false,'Type'=-1>,A<1,?,'ADNCreationType'=10,'ADNType'='Corr:Interno','AdnTypeId'='63','AllowRelease'=false,'AllowReturn'=false,'AutoGenerate'=true,'AutoGenerateOnChange'=false,'ContainerOnly'=false,'DisplayLen'=32,'DisplayName'='_nroRadicado','ElementList'=V{<'prefixValue','prefixType','prefixSeparator','keyValue'><'7',0,'-',0><'3',0,'-',1>},'ElementListSuffix'=V{<'prefixValue','prefixType','prefixSeparator','keyValue'><'%SysFullYear%',1,'-',1>},'FixedQuantity'=true,'FixedRows'=true,'ID'=4,'Length'=32,'MappedField'='','MappingTable'='AdnIDVals','MaxQuantity'=50,'MaxRows'=1,'Name'='_nroRadicado','NewObjectName'=?,'NewVersionName'=?,'NumberFormat'=4,'NumRows'=1,'Quantity'=1,'Required'=false,'ReservedElements'=V{<'view','value'>},'ResetNameTag'=false,'SaveToLegacy'='1','Search'=false,'SpecificContainer'='','Type'=10131>,A<1,?,'DisplayName'='Fecha RadicaciÃ³n','FixedRows'=true,'ID'=9,'MaxRows'=1,'Name'='Fecha_RadicaciÃ³n','NumRows'=1,'Required'=false,'Search'=true,'TimeField'=false,'Type'=-7>,A<1,?,'DisplayLen'=80,'DisplayName'='Nombre solicitante','FixedRows'=true,'ID'=10,'Length'=80,'MaxRows'=1,'Name'='Nombre_solicitante','NumRows'=1,'Required'=false,'Search'=false,'Type'=-1>,A<1,?,'DisplayName'='_idSolicitante','FixedRows'=true,'ID'=8,'MaxRows'=1,'Name'='_idSolicitante','NumRows'=1,'Required'=false,'Search'=false,'SelectGroup'=false,'Type'=14>,A<1,?,'DisplayLen'=32,'DisplayName'='_radicadoGenerado','FixedRows'=true,'ID'=5,'Length'=32,'MaxRows'=1,'Name'='_radicadoGenerado','NumRows'=1,'Required'=false,'Search'=false,'Type'=-1>},'DisplayName'='Atributos','FixedRows'=true,'ID'=1,'MaxRows'=1,'Name'='Attributes','NextID'=11,'NumRows'=1,'Type'=-18>>,'ID'=41000088,'Version'=true>";
+		objstr = objstr.replace("'ElementList'=V{<'prefixValue','prefixType','prefixSeparator','keyValue'><'7',0,'-',0><'3',0,'-',1>},'ElementListSuffix'=V{<'prefixValue','prefixType','prefixSeparator','keyValue'><'%SysFullYear%',1,'-',1>},", "");
+		objstr = objstr.replace("<'view','value'>", "");
+		objstr = objstr.replace("'ValidValues'={'select distinct prefijo from TB_BR_Dependencias where estado = \'Activo\' Order by prefijo'}>,", "");
+		objstr = objstr.replace("{", "[");
+		objstr = objstr.replace("}", "]");
+		objstr = objstr.replace("=", ":");
+		objstr = objstr.replace("A<1,?,", "{");
+
+		String[] pairs = objstr.split(",");
+		StringBuilder jsonBuilder = new StringBuilder();
+
+		int totalRow = pairs.length;
+		for (int i = 0; i < pairs.length; i++) {
+			String aux = pairs[i];
+			aux = aux.replace("]>", "]}");
+			aux = aux.replace("V[", "[");
+//			aux = aux.replace("'", "\"");
+			aux = aux.replace("=", ":");
+			
+//			System.out.println(aux);
+
+			
+			
+			if (i < totalRow-1) {
+				jsonBuilder.append(aux).append(",");
+				
+			} else {
+				jsonBuilder.append(aux);
+			}
+			
+
+		}
+
+//		System.out.println(jsonBuilder);
+		
+		StringBuilder json = new StringBuilder();
+		String builderStr = jsonBuilder.toString();
+		String [] strArr = builderStr.split(",");
+		for (int i = 0; i < strArr.length; i++) {
+			String aux2 = strArr[i];
+			
+			String [] keyValue = aux2.split(":");
+			int tam = keyValue.length;
+			if (tam > 1) {
+				String key = keyValue[0];
+				String value = keyValue[1];
+				
+				
+				if (tam == 2) {
+					if (value.contains(">>")) {
+						value = value.replace(">>", "}}");
+					} else if (value.contains(">]")) {
+						value = value.replace(">]", "}]");
+					} else {
+						int tamVal = value.length();
+						String split = value.substring(0, (tamVal-1));
+//						System.out.println(value+" - "+split);
+						if (isNumeric(split)) {
+							value = split;
+						}
+						
+					}
+
+				} else if (tam > 2) {
+					int j = 1;
+					while (j < (tam -1)) {
+						value +=":" + keyValue[1+j];
+						j++;
+						
+					}
+					
+					
+				}
+				aux2 =key+":"+value;
+			} else {
+				String key = keyValue[0];
+				aux2 =key;
+			}
+			
+			if (i < (totalRow-1) && strArr[i+1].startsWith("{")) {
+				aux2= aux2+ "}";
+			}
+			
+			if (i < (totalRow-1)) {
+				
+				json.append(aux2).append(",");
+				
+			} else {
+				json.append(aux2);
+			}
+			
+		}
+		
+		int jsonTam=json.length();
+		String finalJson = json.substring(0, (jsonTam-1));
+		finalJson += "}";
+		json = new StringBuilder(finalJson);
+		System.out.println(json);
+	}
+
+	public static boolean isNumeric(String str) {
+		boolean result;
+		try {
+			Integer.parseInt(str);
+			result = true;
+		} catch (NumberFormatException e) {
+			result = false;
+		}
+		return result;
+		
+	}
+}
